@@ -52,6 +52,7 @@ public class MyTrackSelectionView extends LinearLayout {
     private static final String TAG = "MyTrackSelectionView";
 
     private final int selectableItemBackgroundResourceId;
+    private static int previousSelectedItem = -1;
     private final LayoutInflater inflater;
     private final CheckedTextView disableView;
     private final CheckedTextView defaultView;
@@ -114,6 +115,7 @@ public class MyTrackSelectionView extends LinearLayout {
                         .getTheme()
                         .obtainStyledAttributes(new int[]{android.R.attr.selectableItemBackground});
         selectableItemBackgroundResourceId = attributeArray.getResourceId(0, 0);
+        Log.e(TAG, "MyTrackSelectionView: " + selectableItemBackgroundResourceId);
         attributeArray.recycle();
 
 
@@ -309,29 +311,18 @@ public class MyTrackSelectionView extends LinearLayout {
         Pair<Integer, Integer> tag = (Pair<Integer, Integer>) view.getTag();
         int groupIndex = tag.first;
         int trackIndex = tag.second;
-        if (override == null || override.groupIndex != groupIndex || !allowAdaptiveSelections) {
-            // A new override is being started.
-            override = new SelectionOverride(groupIndex, trackIndex);
-        } else {
-            // An existing override is being modified.
-            int overrideLength = override.length;
-            int[] overrideTracks = override.tracks;
-            Log.d(TAG, "onTrackViewClicked: "+overrideTracks);
-            if (((CheckedTextView) view).isChecked()) {
-                // Remove the track from the override.
-                if (overrideLength == 1) {
-                    // The last track is being removed, so the override becomes empty.
-                    override = null;
-                    isDisabled = false;
-                } else {
-                    int[] tracks = getTracksRemoving(overrideTracks, trackIndex);
-                    override = new SelectionOverride(groupIndex, tracks);
-                }
-            } else {
-                int[] tracks = getTracksAdding(overrideTracks, trackIndex);
-                override = new SelectionOverride(groupIndex, tracks);
+
+            if (previousSelectedItem == -1) {
+                override = new SelectionOverride(groupIndex, trackIndex);
+                previousSelectedItem = trackIndex;
             }
-        }
+            else {
+                int[] overrideTracks = override.tracks;
+                int[] tracks = getTracksRemoving(overrideTracks, previousSelectedItem);
+                override = new SelectionOverride(groupIndex, tracks);
+                override = new SelectionOverride(groupIndex, trackIndex);
+                previousSelectedItem = trackIndex;
+            }
     }
 
     private static int[] getTracksAdding(int[] tracks, int addedTrack) {
